@@ -15,12 +15,4 @@ program
 var endPath = program.pdf ? "./pdf/" : './html/';
 
 
-
-let newProcess = new mdp(program.source, endPath, program.identifier, program.pdf, program.ignore);
-newProcess.start();
-
-
-
-function processPath(str){
-    path.join(process.cwd(), str)
-}
+let newProcess = new mdp(program.source, program.dest, program.identifier, program.pdf, program.ignore);
