@@ -8,6 +8,6 @@ var options = {
     }
 }
 
-export default function(){
-    return markdownpdf(this.options)
+module.exports = function(){
+    return markdownpdf(options)
 }

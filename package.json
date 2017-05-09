@@ -4,7 +4,8 @@
   "description": "Convert markdown to html or pdf using cd specs",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "babel src --watch -d build"
   },
   "keywords": [
     "markdown",
@@ -13,10 +14,22 @@
   ],
   "author": "Oscar Vazquez <ovazquez@codingdojo.com>",
   "license": "ISC",
+  "bin": {
+    "md-cd": "./index.js"
+  },
   "dependencies": {
+    "commander": "^2.9.0",
     "fs-extra": "^2.1.2",
     "markdown-it": "^8.3.1",
     "markdown-pdf": "^7.0.0",
+    "remarkable-classy": "0.0.1",
     "through2": "^2.0.3"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.24.1",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-preset-env": "^1.4.0",
+    "chai": "^3.5.0",
+    "mocha": "^3.3.0"
   }
 }

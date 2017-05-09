@@ -17,7 +17,7 @@ const md = require('markdown-it')({
 })
 
 
-export default function(){    
+module.exports = function(){    
     return(
         through(
             function(chunk, enc, callback){
