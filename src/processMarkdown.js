@@ -2,6 +2,8 @@ var fs = require("fs");
 var path = require('path');
 var fs = require('fs-extra');
 
+var colors = require('colors');
+
 // transformers
 var md2pdf = require("./transforms/pdf.js");
 var md2html = require("./transforms/html.js");
@@ -12,10 +14,12 @@ class ProcessMarkdown {
         this.startPath = startPath;
         //TODO: Why would I do this to future me? 
         this.endPath = endPath ? endPath : pdf ? "./pdf" : "./html";
+
         this.identifier = identifier;
         this.ignoreList = ignore;
         this.pdf = pdf;
         this.replace = pdf ? ".pdf" : ".html"
+        // Deciding whether to use pdf or html transform ~> /transformers
         this.transformer = pdf ? md2pdf : md2html;
         
         fs.ensureDir(this.endPath);
@@ -27,14 +31,14 @@ class ProcessMarkdown {
             this.readFiles(files.files, files.filePath);
         })
         .catch(error => {
-            console.log("there was an error reading directory", error);
+            console.log(colors.red("Error: \n"), error);
         })
     }
     readDirectory = (filePath) => {
         return new Promise((resolve, reject) => {
             fs.readdir(filePath, (error, files) => {
                 if(error){
-                    console.log("there was an error finding this directory/file", filePath)
+                    console.log(colors.red("No File or Folder named %s, try using -S to indicate folder name"), filePath)
                     reject(error);
                 } else {
                     resolve({files: files, filePath: filePath})
@@ -52,6 +56,8 @@ class ProcessMarkdown {
                 }).catch(error => {
                     console.log(error);
                 })
+            } else {
+                console.log(colors.yellow('Skipping %s'), path.join(filePath, file));
             }
         })
     }
@@ -61,13 +67,12 @@ class ProcessMarkdown {
                 if(error){
                     reject(error);
                 } else {
-                    //TODO: Only use fileName for identifier check
-                    if(fileStat.isFile() && (filePath.indexOf(this.identifier) > -1)){
+                    if(fileStat.isFile() && this.checkIdentifier(filePath)){
                         resolve(this.handleFile);
                     } else if(fileStat.isDirectory()){
                         resolve(this.handleDirectory);
                     } else{
-                        reject(`Skipping ${filePath}`)
+                        reject(colors.yellow('Skipping ' + filePath))
                     }
                 }
             })
@@ -78,12 +83,13 @@ class ProcessMarkdown {
         var stream = fs.createReadStream(sourcePath)
             .pipe(this.transformer())
             .pipe(fs.createWriteStream(outP).on("finish", () => {
-                console.log(`Processed ${sourcePath} and updated ${outP}`);
+                console.log(colors.cyan('Parsed %s'), sourcePath);
+                console.log(colors.blue('Updated %s'), outP)
             }))
     }
     handleDirectory = (sourcePath, destPath, file) => {
         fs.ensureDir(destPath, err => {
-            if(err) {console.log("there was an error reading or creating folder", destPath, err)}
+            if(err) {console.log(colors.red("there was an error reading or creating folder %s"), destPath, err)}
             this.start(sourcePath);
         })
     }
@@ -94,10 +100,10 @@ class ProcessMarkdown {
     }
     //test
     checkIdentifier = (file) => {
-        var baseName = parse.parse(file).base;
+        var baseName = path.parse(file).base;
         return baseName.indexOf(this.identifier) > -1;
     }
-    //TODO: Overdoing it with regex, simplify it. 
+    //TODO: Overdoing it with regex, simplify it.
     startToEnd = (sourcePath) => {
         let re = /[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi;
         let rawStart = this.startPath.replace(re, '')

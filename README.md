@@ -18,8 +18,8 @@ npm install md-codingdojo
     * If you do use this, you should specify an identifier. MD -> PDF takes a while if you parse all of the files in your folder. 
 * `-I` `--identifier` Identifier used to decide whether to parse the file. Default is `.md`
     * I use this for assignments, and add a `.as.` to the assignment file name to mark for md to pdf. 
-* `-i` `--ignore` Still not implemented coming soon.
-    * For now values are just `['node_modules', ".DS_Store", ".git"]`
+
+
 
 ## Use
 
@@ -27,3 +27,11 @@ npm install md-codingdojo
 md-cd
 md-cd -P -D Assignments -I .as.
 ```
+
+## Files and Folders to ignore
+After specifying all of your options, any values to add to the end of the command will be used to decide which files and folders to ignore. 
+
+```terminal
+md-cd -S curriculum -D currHTML node_modules .git README.md
+```
+In the example above [node_modules, .git, README.md] will be the file or folder names that will be ignored. In addition to the files specified above any files that do not match the identifier will also be ignored. 
