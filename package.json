@@ -21,8 +21,10 @@
     "colors": "^1.1.2",
     "commander": "^2.9.0",
     "fs-extra": "^2.1.2",
+    "html-pdf": "^2.1.0",
     "markdown-it": "^8.3.1",
     "markdown-pdf": "^7.0.0",
+    "mkdirp": "^0.5.1",
     "remarkable-classy": "0.0.1",
     "through2": "^2.0.3"
   },

@@ -1,26 +1,26 @@
+import {SKIPPED, ERROR} from "./utils.js";
 var fs = require("fs");
 var path = require('path');
 var fs = require('fs-extra');
 
-var colors = require('colors');
-
-// transformers
-var md2pdf = require("./transforms/pdf.js");
 var md2html = require("./transforms/html.js");
 
+// write streams
+var writeToHtml = require("./transforms/writeToHtml.js");
+var writeToPdf = require("./transforms/writeToPdf.js");
 
 class ProcessMarkdown {
-    constructor(startPath="./src", endPath, identifier='.md', pdf=false, ignore=['node_modules', ".DS_Store", ".git"]){
+    constructor(startPath="./src", endPath='./html', identifier='.md', pdf=false, ignore=['node_modules', ".DS_Store", ".git"]){
         this.startPath = startPath;
-        //TODO: Why would I do this to future me? 
-        this.endPath = endPath ? endPath : pdf ? "./pdf" : "./html";
+        this.endPath = endPath;
 
         this.identifier = identifier;
         this.ignoreList = ignore;
         this.pdf = pdf;
-        this.replace = pdf ? ".pdf" : ".html"
-        // Deciding whether to use pdf or html transform ~> /transformers
-        this.transformer = pdf ? md2pdf : md2html;
+        this.replace = pdf ? ".pdf" : ".html";
+        
+        // Deciding whether to use pdf or html write stream ~> /transformers
+        this.writeStream = pdf ? writeToPdf : writeToHtml;
         
         fs.ensureDir(this.endPath);
         this.start();
@@ -31,14 +31,14 @@ class ProcessMarkdown {
             this.readFiles(files.files, files.filePath);
         })
         .catch(error => {
-            console.log(colors.red("Error: \n"), error);
+            console.log(ERROR("Error: \n"), error);
         })
     }
     readDirectory = (filePath) => {
         return new Promise((resolve, reject) => {
             fs.readdir(filePath, (error, files) => {
                 if(error){
-                    console.log(colors.red("No File or Folder named %s, try using -S to indicate folder name"), filePath)
+                    console.log(ERROR("No File or Folder named %s, try using -S to indicate folder name"), filePath)
                     reject(error);
                 } else {
                     resolve({files: files, filePath: filePath})
@@ -48,48 +48,41 @@ class ProcessMarkdown {
     }
     readFiles = (files, filePath) => {
         files.forEach((file, index) => {
-            if(!this.checkIgnore(file)){
-                this.checkFile(path.join(filePath, file)).then(callback => {
-                    var sourcePath = path.join(filePath, file);
-                    var destPath = this.startToEnd(sourcePath);
-                    callback(sourcePath, destPath, file);
-                }).catch(error => {
-                    console.log(error);
-                })
-            } else {
-                console.log(colors.yellow('Skipping %s'), path.join(filePath, file));
-            }
+            this.checkFile(filePath, file).then(callback => {
+                var sourcePath = path.join(filePath, file);
+                var destPath = this.startToEnd(sourcePath);
+                callback(sourcePath, destPath, file);
+            }).catch(error => {
+                console.log(error);
+            })
         })
     }
-    checkFile = (filePath) => {
+    checkFile = (filePath, file) => {
+        let sourcePath = path.join(filePath, file);
         return new Promise((resolve, reject) => {
-            fs.stat(filePath, (error, fileStat) => {
-                if(error){
-                    reject(error);
-                } else {
-                    if(fileStat.isFile() && this.checkIdentifier(filePath)){
-                        resolve(this.handleFile);
-                    } else if(fileStat.isDirectory()){
-                        resolve(this.handleDirectory);
-                    } else{
-                        reject(colors.yellow('Skipping ' + filePath))
-                    }
+            fs.stat(sourcePath, (error, fileStat) => {
+                if(error){ return reject(error); }
+                if(this.checkIgnore(file)){
+                    reject(SKIPPED('Skipping ' + sourcePath));
+                } else if(fileStat.isFile() && this.checkIdentifier(file) && this.checkMd(file)){
+                    resolve(this.handleFile);
+                } else if(fileStat.isDirectory()){
+                    resolve(this.handleDirectory);
+                } else{
+                    reject(SKIPPED('Skipping ' + sourcePath));
                 }
             })
         })
     }
+
     handleFile = (sourcePath, destPath, file) => {
-        var outP = destPath.replace('.md', this.replace);
         var stream = fs.createReadStream(sourcePath)
-            .pipe(this.transformer())
-            .pipe(fs.createWriteStream(outP).on("finish", () => {
-                console.log(colors.cyan('Parsed %s'), sourcePath);
-                console.log(colors.blue('Updated %s'), outP)
-            }))
+            .pipe(md2html())
+            .pipe(this.writeStream(sourcePath, destPath, this.endPath))
     }
     handleDirectory = (sourcePath, destPath, file) => {
         fs.ensureDir(destPath, err => {
-            if(err) {console.log(colors.red("there was an error reading or creating folder %s"), destPath, err)}
+            if(err) {console.log(ERROR("there was an error reading or creating folder %s"), destPath, err)}
             this.start(sourcePath);
         })
     }
@@ -98,17 +91,22 @@ class ProcessMarkdown {
         var baseName = path.parse(file).base;
         return this.ignoreList.includes(baseName);
     }
-    //test
+    checkMd = (file) => {
+        return path.parse(file).ext === '.md';
+    }
     checkIdentifier = (file) => {
+        if(!this.identifier) { return true };
         var baseName = path.parse(file).base;
         return baseName.indexOf(this.identifier) > -1;
     }
+
     //TODO: Overdoing it with regex, simplify it.
+    // Preparing Destination Path
     startToEnd = (sourcePath) => {
         let re = /[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi;
         let rawStart = this.startPath.replace(re, '')
         let rawEnd = this.endPath.replace(re, '')
-        return path.normalize(sourcePath.replace(rawStart, rawEnd));
+        return path.normalize(sourcePath.replace(rawStart, rawEnd).replace('.md', '.html'));
     }
 }
 module.exports = ProcessMarkdown;
