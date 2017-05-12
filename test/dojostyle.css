@@ -11,21 +11,24 @@ img {
     display: block;
     margin: auto;
 }
-.header{
-    width: 100%;
-    height: 55px;
-    background-color: #202020; 
+/*Page Header CSS*/
+#pageHeader{
+    height: 55px !important;
+    background-color: #202020;
 }
-#logo{
+/* This is where your markdown content is placed */
+#pageContent{
+    padding: 0px 1in;
+}
+#pdf-logo{
     height: 42px;
     width: 140px;
     margin: 7px 0px 10px 10px;
     float: left;
 }
-
-
-#main-content{
-    max-width: 100%;
-    margin-top: 15px;
-    padding: 0px 1in;
+#pdf-header{
+    color: white;
+    float: right;
+    margin: 0px 15px; 
+    line-height: 55px;    
 }
