@@ -1,6 +1,6 @@
 {
   "name": "md-codingdojo",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Convert markdown folder to html or pdf",
   "main": "index.js",
   "scripts": {
